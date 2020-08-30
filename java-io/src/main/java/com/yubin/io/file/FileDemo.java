@@ -15,7 +15,8 @@ public class FileDemo {
      * File提供了对当前文件系统中文件的部分操作
      */
     public static void main(String[] args) throws IOException {
-        method1();
+        //method1();
+        method2();
     }
 
     /**
@@ -78,5 +79,38 @@ public class FileDemo {
 
         File file5 = new File("d:/a/b/c/d/e/f");
         System.out.println("创建多级目录:" + file5.mkdirs());
+    }
+
+    /**
+     * 循环遍历输出d盘中的所有文件的绝对路径
+     */
+    private static void method2() {
+        // 1、创建文件对象
+        File file = new File("d:/");
+        // 2、以递归的方式输出当前文件夹下的所有文件的绝对路径
+        printFilePath(file);
+    }
+
+    /**
+     * 注意：文件在变量的时候,可能会出现空指针异常的问题,原因在于当前文件系统受保护,某些文件没有访问权限,此时会报空指针
+     * @param file
+     */
+    private static void printFilePath(File file) {
+
+        if (file == null) {
+            return;
+        }
+        // 判断当前文件对象是文件还是目录, 如果是文件则直接打印,否则以递归的方法调用当前方法
+        if (file.isFile()) {
+            System.out.println(file.getAbsolutePath());
+        } else {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (int i = 0; i < files.length; i++) {
+                    printFilePath(files[i]);
+                }
+            }
+        }
+
     }
 }
