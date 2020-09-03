@@ -12,7 +12,7 @@ import java.net.Socket;
  */
 public class LoginServer2 {
 
-    public static void main(String[] args) throws IOException, ClassNotFoundException {
+    public static void main(String[] args) throws IOException {
         // 创建服务端对象,开放10086端口
         ServerSocket serverSocket = new ServerSocket(10086);
         while (true) {
