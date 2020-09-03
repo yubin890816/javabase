@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.Scanner;
 
 /**
  * 登录案例客户端
@@ -21,9 +22,8 @@ public class LoginClient {
         // 获取输出流对象
         OutputStream outputStream = client.getOutputStream();
         // 创建Usr对象
-        User user = new User();
-        user.setUserName("zhangsan");
-        user.setPassword("123456");
+        User user = getUser();
+
         // 传输对象使用ObjectOutputStream
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
         objectOutputStream.writeObject(user);
@@ -44,5 +44,17 @@ public class LoginClient {
         objectOutputStream.close();
         outputStream.close();
         client.close();
+    }
+
+    private static User getUser() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("请输入用户名:");
+        String userName = scanner.nextLine();
+        System.out.println("请输入密码:");
+        String password = scanner.nextLine();
+        User user = new User();
+        user.setUserName(userName);
+        user.setPassword(password);
+        return user;
     }
 }
