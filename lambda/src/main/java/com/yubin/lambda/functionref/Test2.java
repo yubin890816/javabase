@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 
 /**
  * 静态方法引用案例演示
- *
+ *  如果函数式接口的实现恰好可以通过调用一个静态方法来实现，那么就可以使用静态方法引用。
  * @author YUBIN
  * @create 2020-09-05
  */

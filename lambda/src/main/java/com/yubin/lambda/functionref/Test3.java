@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 
 /**
  * 实例方法引用 案例演示
+ *  如果函数式接口的实现恰好可以通过调用一个实例的方法来实现，那么就可以使用实例方法引用。
  *
  * @author YUBIN
  * @create 2020-09-05
