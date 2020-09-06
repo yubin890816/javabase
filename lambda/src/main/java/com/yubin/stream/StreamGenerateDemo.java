@@ -15,10 +15,10 @@ public class StreamGenerateDemo {
 
     public static void main(String[] args) {
         //generate1();
-        //generate2();
+        generate2();
         //generate3();
         //generate4();
-        generate5();
+        //generate5();
     }
 
     /**
@@ -28,11 +28,14 @@ public class StreamGenerateDemo {
         // 创建一个String数组
         String[] strArr = {"a", "c", "d", "f", "e", "b"};
         // 通过数组创建Stream
-        Stream<String> stream = Stream.of(strArr);
+        Stream<String> stream1 = Stream.of(strArr);
         // 遍历数组中的每一个元素(forEach方法的入参是Consumer函数式接口:代表一个输入)
         //stream.forEach((str) -> System.out.println(str));
         // 采用对象方法引用的方式书写
-        stream.forEach(System.out::println);
+        stream1.forEach(System.out::println);
+        System.out.println("========================");
+        Stream<String> stream2 = Arrays.stream(strArr);
+        stream2.forEach(System.out::println);
     }
 
     /**
@@ -42,11 +45,13 @@ public class StreamGenerateDemo {
         // 创建一个List集合
         List<String> list = Arrays.asList("a", "b", "c", "d");
         // 通过集合创建Stream
-        Stream<String> stream = list.stream();
+        Stream<String> stream1 = list.stream();
         // 遍历数组中的每一个元素(forEach方法的入参是Consumer函数式接口:代表一个输入)
-        stream.forEach((str) -> System.out.println(str));
+        stream1.forEach((str) -> System.out.println(str));
+        System.out.println("=====================");
+        Stream<String> stream2 = list.parallelStream();
         // 采用对象方法引用的方式书写
-        //stream.forEach(System.out::println);
+        stream2.forEach(System.out::println);
     }
 
     /**
