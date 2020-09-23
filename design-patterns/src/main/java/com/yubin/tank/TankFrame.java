@@ -43,12 +43,12 @@ public class TankFrame extends Frame {
      */
     @Override
     public void paint(Graphics g) {
-        System.out.println("paint");
+        //System.out.println("paint");
         // 绘制一个矩形 x轴 y轴 宽度 高度（原点在左上角,往右x轴越变越大,向下y轴越变越大）
         g.fillRect(x, y, 50, 50);
         // 让黑框框动起来 x轴方向偏移10 y轴方向偏移10
         x += 20;
-        y += 20;
+        //y += 20;
     }
 
     /**
@@ -62,7 +62,10 @@ public class TankFrame extends Frame {
          */
         @Override
         public void keyPressed(KeyEvent e) {
-            System.out.println("key pressed");
+            //x += 100;
+            // 调用repaint方法会自动的调用paint方法(重新绘制窗口)
+            //repaint();
+            //System.out.println("key pressed");
         }
 
         /**
