@@ -47,7 +47,7 @@ public class TankFrame extends Frame {
         // 绘制一个矩形 x轴 y轴 宽度 高度（原点在左上角,往右x轴越变越大,向下y轴越变越大）
         g.fillRect(x, y, 50, 50);
         // 让黑框框动起来 x轴方向偏移10 y轴方向偏移10
-        x += 20;
+        //x += 20;
         //y += 20;
     }
 
@@ -55,9 +55,18 @@ public class TankFrame extends Frame {
      * 匿名内部类,添加键盘的监听
      */
     private class MyKeyListener extends KeyAdapter {
+        // 左键
+        boolean bL = false;
+        // 上键
+        boolean bU = false;
+        // 右键
+        boolean bR = false;
+        // 下键
+        boolean bD = false;
 
         /**
          * 键被按下去的时候调用
+         *
          * @param e
          */
         @Override
@@ -66,10 +75,33 @@ public class TankFrame extends Frame {
             // 调用repaint方法会自动的调用paint方法(重新绘制窗口)
             //repaint();
             //System.out.println("key pressed");
+            // 获取键盘按下的是哪个键(根据按键控制方块的移动)
+            int keyCode = e.getKeyCode();
+            switch (keyCode) {
+                // 左键
+                case KeyEvent.VK_LEFT:
+                    x -= 10;
+                    break;
+                // 上键
+                case KeyEvent.VK_UP:
+                    y -= 10;
+                    break;
+                // 右键
+                case KeyEvent.VK_RIGHT:
+                    x += 10;
+                    break;
+                // 下键
+                case KeyEvent.VK_DOWN:
+                    y += 10;
+                    break;
+                default:
+                    break;
+            }
         }
 
         /**
          * 键弹起来的时候调用
+         *
          * @param e
          */
         @Override
