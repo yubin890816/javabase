@@ -31,7 +31,7 @@ public class OSFileIO {
             case "2" :
                 testRandomAccessFileWrite();
             case "3":
-                //whatByteBuffer();
+                whatByteBuffer();
             default:
         }
     }
@@ -41,18 +41,18 @@ public class OSFileIO {
         File file = new File(path);
         FileOutputStream out = new FileOutputStream(file);
         while(true){
-             Thread.sleep(10);
+            //Thread.sleep(10);
             out.write(data);
         }
     }
 
     //测试buffer文件IO
-    //  jvm  8kB   syscall  write(8KBbyte[])
+    //  jvm  8kB   syscall  write(8KBbyte[]) 这个效率要比普通io快很多
     public static void testBufferedFileIO() throws Exception {
         File file = new File(path);
         BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
         while(true){
-            Thread.sleep(10);
+            //Thread.sleep(10);
             out.write(data);
         }
     }
@@ -61,26 +61,28 @@ public class OSFileIO {
 
     //测试文件NIO
     public static void testRandomAccessFileWrite() throws  Exception {
+        // 创建一个随机访问文件的对象（通道是读写两个方向）, 并调用普通的写
         RandomAccessFile raf = new RandomAccessFile(path, "rw");
-
-        raf.write("hello mashibing\n".getBytes());
-        raf.write("hello seanzhou\n".getBytes());
+        raf.write("hello shanghai\n".getBytes());
+        raf.write("hello yubin\n".getBytes());
         System.out.println("write------------");
-        System.in.read();
+        System.in.read(); // 程序阻塞
 
-        raf.seek(4);
+        // 随机写
+        raf.seek(4); // 将偏移量置位4
         raf.write("ooxx".getBytes());
 
         System.out.println("seek---------");
         System.in.read();
 
-        FileChannel rafchannel = raf.getChannel();
+        // 对外映射写
+        FileChannel rafchannel = raf.getChannel(); // 拿到文件通道
         //mmap  堆外  和文件映射的   byte  not  objtect
         MappedByteBuffer map = rafchannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
 
         map.put("@@@".getBytes());  //不是系统调用  但是数据会到达 内核的pagecache
         //曾经我们是需要out.write()  这样的系统调用，才能让程序的data 进入内核的pagecache
-        //曾经必须有用户态内核态切换
+        //换言之就是曾经必须有用户态内核态切换
         //mmap的内存映射，依然是内核的pagecache体系所约束的！！！
         //换言之，丢数据
         //你可以去github上找一些 其他C程序员写的jni扩展库，使用linux内核的Direct IO
@@ -99,7 +101,7 @@ public class OSFileIO {
         ByteBuffer buffer = ByteBuffer.allocate(8192);
         //ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
 
-        int read = rafchannel.read(buffer);   //buffer.put()
+        int read = rafchannel.read(buffer);   // 相当于 buffer.put()
         System.out.println(buffer);
         buffer.flip();
         System.out.println(buffer);
@@ -108,5 +110,42 @@ public class OSFileIO {
             Thread.sleep(200);
             System.out.print(((char)buffer.get(i)));
         }
+    }
+
+    public static void whatByteBuffer(){
+
+        ByteBuffer buffer = ByteBuffer.allocate(1024); // 给ByteBuffer分配1024的大小(还可以使用下面的方式分配,前种是分配在堆上,下一个方式是堆外分配)
+        //ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+
+        System.out.println("postition: " + buffer.position()); // 偏移指针
+        System.out.println("limit: " +  buffer.limit()); // 大小限制
+        System.out.println("capacity: " + buffer.capacity()); // 总大小
+        System.out.println("mark: " + buffer);
+
+        buffer.put("123".getBytes());
+
+        System.out.println("-------------put:123......");
+        System.out.println("mark: " + buffer);
+
+        buffer.flip();   //读写行为交替(翻转)
+
+        System.out.println("-------------flip......");
+        System.out.println("mark: " + buffer);
+
+        buffer.get(); // 读取一个字节
+
+        System.out.println("-------------get......");
+        System.out.println("mark: " + buffer);
+
+        buffer.compact();
+
+        System.out.println("-------------compact......");
+        System.out.println("mark: " + buffer);
+
+        buffer.clear(); // 清除
+
+        System.out.println("-------------clear......");
+        System.out.println("mark: " + buffer);
+
     }
 }
