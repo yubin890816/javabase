@@ -36,7 +36,7 @@ public class OSFileIO {
         }
     }
 
-    // 最基本的file写 每隔10s往文件中写数据,注意这里没有flush操作
+    // 最基本的file写 每隔10ms往文件中写数据,注意这里没有flush操作
     public static  void testBasicFileIO() throws Exception {
         File file = new File(path);
         FileOutputStream out = new FileOutputStream(file);
@@ -47,7 +47,7 @@ public class OSFileIO {
     }
 
     //测试buffer文件IO
-    //  jvm  8kB   syscall  write(8KBbyte[]) 这个效率要比普通io快很多
+    //  jvm  8kB满了才会进行syscall系统调用（用户态-内核态的切换）  write(8KB byte[]) 这个效率要比普通io快很多（普通io是write一次就发生系统调用一次）
     public static void testBufferedFileIO() throws Exception {
         File file = new File(path);
         BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
@@ -59,32 +59,34 @@ public class OSFileIO {
 
 
 
-    //测试文件NIO
+    // 测试文件NIO
     public static void testRandomAccessFileWrite() throws  Exception {
         // 创建一个随机访问文件的对象（通道是读写两个方向）, 并调用普通的写
         RandomAccessFile raf = new RandomAccessFile(path, "rw");
+        // 1、普通的写
         raf.write("hello shanghai\n".getBytes());
         raf.write("hello yubin\n".getBytes());
         System.out.println("write------------");
         System.in.read(); // 程序阻塞
 
-        // 随机写
+        // 2、随机写
         raf.seek(4); // 将偏移量置位4
         raf.write("ooxx".getBytes());
 
         System.out.println("seek---------");
         System.in.read();
 
-        // 对外映射写
-        FileChannel rafchannel = raf.getChannel(); // 拿到文件通道
+        // 3、堆外映射写
+        // 此处开始NIO
+        FileChannel rafchannel = raf.getChannel(); // 拿到文件通道(创建的时候就是读写两个方向的)
         //mmap  堆外  和文件映射的   byte  not  objtect
+        // 只有文件系统有map, 只有map有MappedByteBuffer
         MappedByteBuffer map = rafchannel.map(FileChannel.MapMode.READ_WRITE, 0, 4096);
 
         map.put("@@@".getBytes());  //不是系统调用  但是数据会到达 内核的pagecache
         //曾经我们是需要out.write()  这样的系统调用，才能让程序的data 进入内核的pagecache
-        //换言之就是曾经必须有用户态内核态切换
-        //mmap的内存映射，依然是内核的pagecache体系所约束的！！！
-        //换言之，丢数据
+        //换言之就是曾经必须有用户态内核态切换 也就是使用了MappedByteBuffer减少了吸引调用,数据也能到内核里面去
+        //mmap的内存映射，依然是内核的pagecache体系所约束的！！！ 换言之，丢数据
         //你可以去github上找一些 其他C程序员写的jni扩展库，使用linux内核的Direct IO
         //直接IO是忽略linux的pagecache
         //是把pagecache  交给了程序自己开辟一个字节数组当作pagecache，动用代码逻辑来维护一致性/dirty。。。一系列复杂问题
@@ -92,16 +94,15 @@ public class OSFileIO {
         System.out.println("map--put--------");
         System.in.read();
 
-        //map.force(); //  flush
-
-
+        //map.force(); //  类似于flush
 
         raf.seek(0);
 
+        // 4、ByteBuffer在FileChannel中的使用
         ByteBuffer buffer = ByteBuffer.allocate(8192);
         //ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
 
-        int read = rafchannel.read(buffer);   // 相当于 buffer.put()
+        int read = rafchannel.read(buffer);   // 相当于 buffer.put()，把FileChannel中的内容put到buffer里面去
         System.out.println(buffer);
         buffer.flip();
         System.out.println(buffer);
@@ -114,7 +115,9 @@ public class OSFileIO {
 
     public static void whatByteBuffer(){
 
-        ByteBuffer buffer = ByteBuffer.allocate(1024); // 给ByteBuffer分配1024的大小(还可以使用下面的方式分配,前种是分配在堆上,下一个方式是堆外分配)
+        // 给ByteBuffer分配1024的大小(还可以使用下面的方式分配,前种是分配在堆上,下一个方式是堆外分配)
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+
         //ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
 
         System.out.println("postition: " + buffer.position()); // 偏移指针
@@ -137,7 +140,7 @@ public class OSFileIO {
         System.out.println("-------------get......");
         System.out.println("mark: " + buffer);
 
-        buffer.compact();
+        buffer.compact(); // 进入写操作
 
         System.out.println("-------------compact......");
         System.out.println("mark: " + buffer);
