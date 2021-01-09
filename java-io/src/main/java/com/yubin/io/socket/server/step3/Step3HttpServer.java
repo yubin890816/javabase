@@ -5,7 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * 简单Http服务之优化线程模型
+ * 简单Http服务之Request/Response对象抽象
  *
  * @author YUBIN
  * @create 2021-01-05
