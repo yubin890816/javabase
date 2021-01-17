@@ -1,4 +1,4 @@
-package com.yubin.io.rpc;
+package com.yubin.io.rpcdemo.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

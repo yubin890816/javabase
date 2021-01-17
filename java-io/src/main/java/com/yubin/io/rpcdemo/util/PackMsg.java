@@ -1,4 +1,7 @@
-package com.yubin.io.rpc;
+package com.yubin.io.rpcdemo.util;
+
+import com.yubin.io.rpcdemo.rpc.protocol.MyContent;
+import com.yubin.io.rpcdemo.rpc.protocol.MyHeader;
 
 /**
  * @author YUBIN
