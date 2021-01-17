@@ -2,22 +2,24 @@ package com.yubin.io.rpcdemo;
 
 import com.yubin.io.rpcdemo.proxy.MyProxy;
 import com.yubin.io.rpcdemo.rpc.Dispatcher;
-import com.yubin.io.rpcdemo.rpc.transport.ServerDecode;
-import com.yubin.io.rpcdemo.rpc.transport.ServerRequestHandler;
+import com.yubin.io.rpcdemo.rpc.protocol.MyContent;
 import com.yubin.io.rpcdemo.service.Car;
 import com.yubin.io.rpcdemo.service.MyCar;
+import com.yubin.io.rpcdemo.util.SerDerUtil;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.*;
 import org.junit.Test;
 
-import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 基于netty手写一个RPC框架
@@ -57,8 +59,47 @@ public class MyRPCTest {
                     protected void initChannel(NioSocketChannel ch) throws Exception {
                         System.out.println("server accept client port: "+ ch.remoteAddress().getPort());
                         ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ServerDecode()); // 解码器
-                        p.addLast(new ServerRequestHandler(dispatcher)); // 解析每一条业务
+                        // 1、自定义的rpc协议(自己定义协议的时候,关注过哪些问题 粘包拆包问题, header+body)
+                        //p.addLast(new ServerDecode()); // 解码器
+                        //p.addLast(new ServerRequestHandler(dispatcher)); // 解析每一条业务
+                        // 2、传输协议使用的是http(netty提供了一套编解码)
+                        p.addLast(new HttpServerCodec())
+                                .addLast(new HttpObjectAggregator(1024 * 512))
+                                .addLast(new ChannelInboundHandlerAdapter(){
+                                    @Override
+                                    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                                        // http协议, 这个msg是什么呢? 完整的http request
+                                        FullHttpRequest request = (FullHttpRequest) msg;
+                                        System.out.println(request.toString()); // 因为现在consumer使用的是一个现成的URL
+                                        ByteBuf content = request.content();
+                                        byte[] data = new byte[content.readableBytes()];
+                                        content.readBytes(data);
+                                        ObjectInputStream oin = new ObjectInputStream(new ByteArrayInputStream(data));
+                                        MyContent myContent = (MyContent) oin.readObject();
+
+                                        String serviceName = myContent.getName();
+                                        String methodName = myContent.getMethodName();
+                                        Object obj = dispatcher.get(serviceName);
+                                        Class<?> clazz = obj.getClass();
+                                        Object result = null;
+                                        try {
+                                            Method method = clazz.getMethod(methodName, myContent.getParameterTypes());
+                                            result = method.invoke(obj, myContent.getArgs());
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        // 封装返回的内容
+                                        MyContent resContent = new MyContent();
+                                        resContent.setRes(result);
+                                        byte[] msgBody = SerDerUtil.ser(resContent);
+
+                                        DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_0,
+                                                HttpResponseStatus.OK, Unpooled.copiedBuffer(msgBody));
+                                        // http协议 header+body
+                                        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, msgBody.length);
+                                        ctx.writeAndFlush(response);
+                                    }
+                                });
                     }
                 }).bind(new InetSocketAddress("localhost", 9090));
         try {
@@ -79,23 +120,24 @@ public class MyRPCTest {
             startServer();
         }).start();*/
 
-        System.out.println("服务端启动成功...");
-        //Car car = proxyGet(Car.class);
-        //car.ooxx("hello rpc");
+        //System.out.println("服务端启动成功...");
+        Car car = MyProxy.proxyGet(Car.class);
+        String result = car.ooxx("hello rpc");
+        System.out.println(result);
 
         // 获取到的其实是一个代理对象,底层封装了对远程服务的调用
-        int size = 20;
+        /*int size = 20;
         AtomicInteger atomicInteger = new AtomicInteger();
         Thread[] threads = new Thread[size];
         for (int i = 0; i < size; i++) {
             threads[i] = new Thread(() -> {
 
-                /**
+                *//**
                  * FC: 函数调用(寻址)
                  * SC: 系统调用(中断)
                  * RPC: 一般走的是Socket
                  * IPC: 管道、信号、Socket（同主机的进程间调用）
-                 */
+                 *//*
                 // 思考一下,服务可能是远程的,也可能是本机的
                 Car car = MyProxy.proxyGet(Car.class);
                 String arg = "hello rpc" + atomicInteger.incrementAndGet();
@@ -110,6 +152,11 @@ public class MyRPCTest {
             System.in.read();
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
+        /*try {
+            System.in.read();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
     }
 }
