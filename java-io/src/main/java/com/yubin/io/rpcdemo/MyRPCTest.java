@@ -3,6 +3,7 @@ package com.yubin.io.rpcdemo;
 import com.yubin.io.rpcdemo.proxy.MyProxy;
 import com.yubin.io.rpcdemo.rpc.Dispatcher;
 import com.yubin.io.rpcdemo.rpc.protocol.MyContent;
+import com.yubin.io.rpcdemo.rpc.transport.MyHttpRpcHandler;
 import com.yubin.io.rpcdemo.service.Car;
 import com.yubin.io.rpcdemo.service.MyCar;
 import com.yubin.io.rpcdemo.util.SerDerUtil;
@@ -14,6 +15,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -109,6 +112,28 @@ public class MyRPCTest {
         }
     }
 
+    @Test
+    public void startHttpServer(){
+        MyCar car = new MyCar();
+
+        Dispatcher dis = Dispatcher.getInstance();
+
+        dis.register(Car.class.getName(), car);
+
+
+        //tomcat jetty  【servlet】
+        Server server = new Server(new InetSocketAddress("localhost", 9090));
+        ServletContextHandler handler = new ServletContextHandler(server, "/");
+        server.setHandler(handler);
+        handler.addServlet(MyHttpRpcHandler.class,"/*");  //web.xml
+
+        try {
+            server.start();
+            server.join();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * 模拟Consumer
